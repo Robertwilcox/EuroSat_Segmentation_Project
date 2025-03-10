@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 import pandas as pd
 import csv
-from src.classification.classifier import LandUseClassifier, extract_color_features
-from src.segmentation.kmeans import kmeans_segmentation
+from src.classification.classifier import LandUseClassifier,extract_combined_features, extract_color_features
+from src.segmentation.kmeans import kmeans_segmentation_lab as kmeans_segmentation
 
 def process_image(image_path, classifier, k=5):
     image = cv2.imread(image_path)
@@ -13,9 +13,10 @@ def process_image(image_path, classifier, k=5):
         return None, None, None
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
-    # Run K-Means segmentation
-    labels, centroids = kmeans_segmentation(image, k)
-    segmented_image = centroids[labels]
+    # Run Lab-based K-Means segmentation 
+    # (which converts to Lab, clusters on a*b*, and converts back to RGB)
+    labels, centroids, segmented_image = kmeans_segmentation(image, k)
+
     
     # Extract features for each cluster
     features_list = []
@@ -25,7 +26,7 @@ def process_image(image_path, classifier, k=5):
             continue
         cluster_img = image.copy()
         cluster_img[~mask] = 0
-        features = extract_color_features(cluster_img)
+        features = extract_combined_features(cluster_img)
         features_list.append(features)
     features_array = np.array(features_list)
     
@@ -63,7 +64,7 @@ def test_pipeline_full():
     
     mistakes = []
     processed_count = 0
-    max_images = 100  # Limit processing to 100 images
+    max_images = 1000  # Limit processing to 100 images
     
     for idx, row in df.iterrows():
         if processed_count >= max_images:
