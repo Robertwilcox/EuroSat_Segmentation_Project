@@ -8,6 +8,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
 
+from src.segmentation.kmeans import kmeans_segmentation
+from src.segmentation.fuzzy_cmeans import fuzzy_cmeans_segmentation
+
 def extract_color_features(image):
     """
     Extract basic color features from an image.
@@ -22,6 +25,46 @@ def extract_color_features(image):
     means = np.mean(image, axis=(0, 1))
     stds = np.std(image, axis=(0, 1))
     return np.concatenate([means, stds])
+
+def extract_segmented_features(image, k=2, m=2, method='kmeans'):
+    """
+    Segment the image and extract aggregated features from each segment.
+    
+    Parameters:
+      image: numpy array of shape (H, W, 3) in RGB format.
+      k: Number of segments/clusters.
+      m: Fuzziness parameter (used only for fuzzy segmentation).
+      method: 'kmeans' or 'fuzzy' segmentation.
+      
+    Returns:
+      aggregated_features: A 1D numpy array representing aggregated features from the segments.
+    """
+    # Perform segmentation based on the selected method.
+    if method == 'kmeans':
+        labels, centroids, _ = kmeans_segmentation(image, k)
+    elif method == 'fuzzy':
+        labels, centroids, _ = fuzzy_cmeans_segmentation(image, k, m)
+    else:
+        raise ValueError("Invalid segmentation method. Choose 'kmeans' or 'fuzzy'.")
+    
+    # Extract features from each segment.
+    features_list = []
+    for i in range(k):
+        mask = (labels == i)
+        if np.sum(mask) == 0:
+            continue
+        cluster_img = image.copy()
+        cluster_img[~mask] = 0
+        features = extract_combined_features(cluster_img)
+        features_list.append(features)
+    
+    if features_list:
+        # Aggregate the features by taking the mean across segments.
+        aggregated_features = np.mean(np.array(features_list), axis=0)
+        return aggregated_features
+    else:
+        return None
+
 
 def extract_texture_features(image, P=8, R=1.0):
     """
