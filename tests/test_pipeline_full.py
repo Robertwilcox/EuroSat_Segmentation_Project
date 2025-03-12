@@ -14,7 +14,7 @@ from src.classification.classifier import LandUseClassifier, extract_combined_fe
 # ----- Configuration Parameters -----
 DEFAULT_K = 2          # Default number of segments for standard evaluation (for k-means & fuzzy default)
 M = 2                  # Fuzziness parameter for fuzzy C-means
-MAX_IMAGES = 50        # Maximum number of images to process in the test
+MAX_IMAGES = 500       # Maximum number of images to process in the test
 FUZZY_K_RANGE = range(1, 6)  # Adjustable range for k values to test in fuzzy segmentation
 # --------------------------------------
 
@@ -168,10 +168,9 @@ def evaluate_model(model, X, y, dataset_name, model_name):
 def test_pipeline_full():
     """
     Evaluate all three models (trained on raw, kmeans, fuzzy data) on all three test datasets (raw, kmeans, fuzzy).
-    Prints detailed classification reports and timing information.
+    Prints detailed classification reports, timing information, and memory usage for each dataset.
     Builds and displays an overall accuracy comparison matrix and an evaluation time matrix.
-    Additionally, loops through adjustable k values (FUZZY_K_RANGE) for fuzzy segmentation,
-    plots overall accuracy vs. k, and records timing for key portions.
+    Additionally, loops through adjustable k values (FUZZY_K_RANGE) for fuzzy segmentation and plots overall accuracy vs. k.
     Finally, after all computations, displays all stored confusion matrices and a timing comparison plot.
     """
     start_total = time.time()
@@ -191,6 +190,11 @@ def test_pipeline_full():
     print("Raw:", X_test_raw.shape)
     print("K-Means:", X_test_kmeans.shape)
     print("Fuzzy (default):", X_test_fuzzy.shape)
+    
+    # Print memory usage for each test dataset (in MB)
+    print("Memory usage for raw dataset: {:.6f} MB".format(X_test_raw.nbytes / (1024*1024)))
+    print("Memory usage for K-Means dataset: {:.6f} MB".format(X_test_kmeans.nbytes / (1024*1024)))
+    print("Memory usage for Fuzzy dataset: {:.6f} MB".format(X_test_fuzzy.nbytes / (1024*1024)))
     
     # Load the three models
     classifier_raw = load_model("landuse_classifier_raw.pkl")
@@ -237,7 +241,7 @@ def test_pipeline_full():
     
     # Plot evaluation time comparison matrix
     plt.figure(figsize=(8, 6))
-    sns.heatmap(eval_time_df, annot=True, fmt=".2f", cmap="magma")
+    sns.heatmap(eval_time_df, annot=True, fmt=".4f", cmap="magma")
     plt.title("Model Evaluation Time Comparison Matrix (seconds)", fontsize=14)
     plt.ylabel("Model Trained On")
     plt.xlabel("Test Dataset")
