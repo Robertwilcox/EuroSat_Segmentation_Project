@@ -1,5 +1,6 @@
 # Ignore the data directory
 data/
+output_images/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
